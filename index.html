@@ -177,7 +177,8 @@
 <div class="sync-bar">
   Google Sheets sync: <span id="sync-status" class="sync-status">not configured</span>
   &nbsp;·&nbsp; <a href="#" onclick="switchTab('settings',document.querySelector('[data-tab=settings]'));return false;">Configure in Settings</a>
-  &nbsp;·&nbsp; <button onclick="syncAll()" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.8);padding:3px 10px;border-radius:100px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">Sync now</button>
+  &nbsp;·&nbsp; <button onclick="syncAll()" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.8);padding:3px 10px;border-radius:100px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">↑ Save to Sheets</button>
+  &nbsp;·&nbsp; <button onclick="loadFromSheets()" style="background:none;border:1px solid rgba(255,255,255,.3);color:rgba(255,255,255,.8);padding:3px 10px;border-radius:100px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;">↓ Load from Sheets</button>
 </div>
 
 <div class="main">
@@ -299,10 +300,10 @@
     <div class="gs-setup">
       <h3>Step 1 — paste your Apps Script URL</h3>
       <p style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.6;">Once you've deployed your Google Apps Script (see instructions below), paste the web app URL here. All your data will sync automatically every time you make a change.</p>
-      <input class="gs-input" id="gs-url-input" type="url" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" value="">
+      <input class="gs-input" id="gs-url-input" type="url" placeholder="https://script.google.com/macros/s/AKfycbwM-J8KnG9DySE3LfD3JO1rAL5cxqIcn7vZJOrSw9oG-ytjwampOngqhWK1a-6JVzsm/exec" value="">
       <br>
       <button class="gs-btn" onclick="saveGsUrl()">Save & test connection</button>
-      <button class="gs-btn secondary" onclick="syncAll()">Sync all data now</button>
+      <button class="gs-btn" onclick="syncAll()">↑ Save to Sheets</button> <button class="gs-btn secondary" onclick="loadFromSheets()">↓ Load from Sheets</button>
       <p id="gs-test-result" style="font-size:13px;margin-top:10px;color:var(--text2);"></p>
     </div>
 
@@ -508,8 +509,8 @@ async function loadFromSheets(){
     if(data.weights){weightLog=data.weights;save('hm_weights',weightLog);}
     if(data.lifts){Object.entries(data.lifts).forEach(([k,v])=>localStorage.setItem('lifts_'+k,JSON.stringify(v)));}
     if(data.runs){Object.entries(data.runs).forEach(([k,v])=>localStorage.setItem('run_'+k,JSON.stringify(v)));}
-    setSyncStatus('loaded ✓','ok');
-    location.reload();
+    setSyncStatus('loaded ✓ — refreshing page…','ok');
+    setTimeout(()=>location.reload(),800);
   }catch(e){setSyncStatus('load failed','err');}
 }
 
@@ -533,8 +534,7 @@ function getAllRuns(){
 function saveGsUrl(){
   gsUrl=document.getElementById('gs-url-input').value.trim();
   localStorage.setItem('hm_gsurl',gsUrl);
-  document.getElementById('gs-test-result').textContent='Saved. Attempting sync…';
-  syncAll();
+  document.getElementById('gs-test-result').textContent='URL saved. Press \"Sync all data now\" to sync.';
 }
 
 // ── SESSION TYPE ─────────────────────────────────────────────────────────────
@@ -784,19 +784,18 @@ function toggleDay(cb){
   const el=document.getElementById('sess-'+key);
   if(el)el.className='day-session'+(cb.checked?' checked-row':'');
   updateWeekProgress(wi);updateProgress();updateDashboard();
-  syncAll();
 }
 
 function saveWeight(input){
   const wk=input.dataset.wk;
-  weightLog[wk]=input.value;saveWeights();updateDashboard();syncAll();
+  weightLog[wk]=input.value;saveWeights();updateDashboard();
 }
 
 function saveRun(input){
   const rk=input.dataset.rk,field=input.dataset.field;
   const saved=JSON.parse(localStorage.getItem(rk)||'{}');
   saved[field]=input.value;localStorage.setItem(rk,JSON.stringify(saved));
-  updateDashboard();syncAll();
+  updateDashboard();
 }
 
 function saveLifts(input){
@@ -813,7 +812,6 @@ function saveLifts(input){
       else{const d=document.createElement('div');d.className='ex-pb';d.textContent='PB: '+nv+'kg';input.closest('div').appendChild(d);}
     }
   }
-  syncAll();
 }
 
 function toggleWeek(wi,e){
@@ -936,8 +934,8 @@ function copyScript(){
   });
 }
 
-// load from sheets on startup if configured
-if(gsUrl){setSyncStatus('configured','ok');loadFromSheets();}
+// sync is manual only — update status indicator on load
+if(gsUrl){setSyncStatus('configured — press Sync to load','ok');}
 </script>
 </body>
 </html>
